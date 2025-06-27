@@ -1,21 +1,14 @@
 package com.ubp.clasificador.ml;
 
 import com.ubp.clasificador.util.FileContentReader;
-import com.ubp.clasificador.util.TextPreprocessor;
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,11 +46,10 @@ public class ClassifierService {
      * @param trainingDataPath La ruta a la carpeta que contiene las subcarpetas de categorías.
      * @throws Exception Si ocurre un error durante el entrenamiento.
      */
+    
     public void trainModel(Path trainingDataPath) throws Exception {
         System.out.println("DEBUG (CS): Inicia trainModel para: " + trainingDataPath.toAbsolutePath().normalize());
-
         File trainingDirFile = trainingDataPath.toFile();
-
         System.out.println("DEBUG (CS): trainingDirFile.exists(): " + trainingDirFile.exists());
         System.out.println("DEBUG (CS): trainingDirFile.isDirectory(): " + trainingDirFile.isDirectory());
         System.out.println("DEBUG (CS): trainingDirFile.canRead(): " + trainingDirFile.canRead());
@@ -183,6 +175,7 @@ public class ClassifierService {
      * @param modelPath La ruta del archivo del modelo.
      * @return true si el modelo se cargó exitosamente, false en caso contrario.
      */
+    
     public boolean loadModel(Path modelPath) {
         try {
             Object[] modelAndFilterAndRawAttributes = (Object[]) SerializationHelper.read(modelPath.toString()); // Cambiado a 4 elementos
@@ -208,6 +201,7 @@ public class ClassifierService {
      * @return La categoría predicha como String.
      * @throws Exception Si el modelo no está entrenado/cargado o si ocurre un error en la predicción.
      */
+    
     // Eliminada la anotación @Override ya que no sobrescribe ningún método
     public String classify(List<String> preprocessedTokens) throws Exception {
         if (classifier == null || dataFormat == null || filter == null || rawAttributes == null) { 
@@ -255,6 +249,7 @@ public class ClassifierService {
     /**
      * Guarda el clasificador, el filtro y el formato de datos en un archivo.
      */
+    
     private void saveModel(Path path, Classifier classifier, StringToWordVector filter, Instances dataFormat) throws Exception {
         // Guardamos un array de objetos para mantener la integridad del modelo
         // También guardamos rawAttributes para poder reconstruir las instancias de predicción

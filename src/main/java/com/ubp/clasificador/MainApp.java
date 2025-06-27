@@ -1,7 +1,7 @@
 package com.ubp.clasificador;
 
 import com.ubp.clasificador.ml.ClassifierService;
-import com.ubp.clasificador.ui.MainController; // ¡Importa MainController!
+import com.ubp.clasificador.ui.MainController; 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -19,7 +19,6 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        // ¡AÑADIR ESTA LÍNEA AQUÍ! Le dice a WEKA que no use optimizaciones nativas.
         System.setProperty("weka.core.maxres.native", "false");
         System.out.println("DEBUG: Propiedad 'weka.core.maxres.native' configurada a false.");
 
@@ -50,17 +49,7 @@ public class MainApp extends Application {
             }
         }
 
-        // ¡VERIFICA ESTA LÍNEA! DEBE SER CORRECTA.
-        // Asumiendo que main_view.fxml está en src/main/resources/com/ubp/clasificador/ui/
-        // Y MainApp.java está en src/main/java/com/ubp/clasificador/
-        FXMLLoader fxmlLoader = new FXMLLoader(MainApp.class.getResource("main_view.fxml")); // Línea 55
-        
-        // Si no funciona, intenta esta alternativa:
-        // FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("ui/main_view.fxml"));
-        // O si estás seguro que MainController.class está en el mismo paquete que el FXML en resources:
-        // FXMLLoader fxmlLoader = new FXMLLoader(MainController.class.getResource("main_view.fxml"));
-
-
+        FXMLLoader fxmlLoader = new FXMLLoader(MainApp.class.getResource("main_view.fxml")); 
         Scene scene = new Scene(fxmlLoader.load(), 900, 600);
 
         controllerInstance = fxmlLoader.getController();

@@ -24,7 +24,6 @@ public class FileContentReader {
         }
         String extension = fileName.substring(dotIndex + 1).toLowerCase();
 
-        // ¡ACTUALIZACIÓN AQUÍ! Añadir "properties" y "conf"
         return switch (extension) {
             case "txt", "csv", "log", "md", "json", "xml", "html", "css", "js",
                  "java", "py", "c", "cpp", "h", "hpp", "sh", "bat", "sql", "yml", "yaml",

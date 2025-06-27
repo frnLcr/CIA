@@ -62,10 +62,10 @@ public class MainController {
     }
 
     @FXML
-private void handleSelectFolder() {
-    DirectoryChooser directoryChooser = new DirectoryChooser();
-    directoryChooser.setTitle("Seleccionar Carpeta Raíz");
-    File selectedDirectory = directoryChooser.showDialog(selectFolderButton.getScene().getWindow());
+    private void handleSelectFolder() {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Seleccionar Carpeta Raíz");
+        File selectedDirectory = directoryChooser.showDialog(selectFolderButton.getScene().getWindow());
 
     if (selectedDirectory != null) {
         Path rootFolderPath = selectedDirectory.toPath();

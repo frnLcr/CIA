@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
  * Tarea que procesa todos los archivos DENTRO de una única carpeta.
  * NO es recursiva. Se espera que se cree una instancia de esta tarea por cada carpeta a procesar.
  */
+
 public class FolderProcessingTask extends Task<Void> {
 
     private final Path singleFolderPath;
@@ -41,8 +42,7 @@ public class FolderProcessingTask extends Task<Void> {
             if (isCancelled()) {
                 break;
             }
-
-            // La lógica de clasificación es la misma que teníamos antes
+            
             String fileName = filePath.getFileName().toString();
             String fileExtension = FileContentReader.getFileExtension(filePath);
             String predictedCategory;
