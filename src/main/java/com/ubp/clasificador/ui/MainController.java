@@ -1,7 +1,7 @@
 package com.ubp.clasificador.ui;
 
 // Imports de JavaFX
-import com.ubp.clasificador.task.FolderProcessingTask;
+import com.ubp.clasificador.task.FileProcessingTask;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -62,68 +62,67 @@ public class MainController {
     }
 
     @FXML
-    private void handleSelectFolder() {
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Seleccionar Carpeta Raíz");
-        File selectedDirectory = directoryChooser.showDialog(selectFolderButton.getScene().getWindow());
+private void handleSelectFolder() {
+    DirectoryChooser directoryChooser = new DirectoryChooser();
+    directoryChooser.setTitle("Seleccionar Carpeta para Analizar");
+    File selectedDirectory = directoryChooser.showDialog(selectFolderButton.getScene().getWindow());
 
     if (selectedDirectory != null) {
         Path rootFolderPath = selectedDirectory.toPath();
-        folderPathLabel.setText("Ruta Raíz: " + rootFolderPath.toString());
+        folderPathLabel.setText("Analizando: " + rootFolderPath.toString());
         fileResults.clear();
         progressBar.setProgress(0);
         selectFolderButton.setDisable(true);
-        statusLabel.setText("Buscando subcarpetas...");
+        statusLabel.setText("Buscando todos los archivos...");
 
-        // Usamos un try-catch porque Files.list() puede lanzar IOException
         try {
-            // 1. Obtener la lista de todas las subcarpetas
-            List<Path> subfolders;
-            try (java.util.stream.Stream<Path> paths = Files.list(rootFolderPath)) {
-                subfolders = paths.filter(Files::isDirectory).collect(Collectors.toList());
+            // 1. Obtener la lista de TODOS los archivos recursivamente
+            List<Path> allFiles;
+            try (var pathStream = Files.walk(rootFolderPath)) {
+                allFiles = pathStream.filter(Files::isRegularFile).collect(Collectors.toList());
             }
 
-            if (subfolders.isEmpty()) {
-                statusLabel.setText("No se encontraron subcarpetas. Analizando carpeta raíz...");
-                // Si no hay subcarpetas, al menos analiza la carpeta raíz
-                subfolders.add(rootFolderPath);
+            if (allFiles.isEmpty()) {
+                statusLabel.setText("No se encontraron archivos en la carpeta seleccionada.");
+                selectFolderButton.setDisable(false);
+                return; // Salir si no hay nada que hacer
             }
 
-            final int totalFolders = subfolders.size();
-            final AtomicInteger completedFolders = new AtomicInteger(0); // Contador atómico para progreso thread-safe
-            statusLabel.setText("Encontradas " + totalFolders + " carpetas. Lanzando hilos de análisis...");
+            final int totalFiles = allFiles.size();
+            final AtomicInteger completedFiles = new AtomicInteger(0);
+            statusLabel.setText("Encontrados " + totalFiles + " archivos. Iniciando análisis paralelo...");
 
-            // 2. Por cada subcarpeta, lanzar una tarea de procesamiento
-            for (Path folder : subfolders) {
-                FolderProcessingTask task = new FolderProcessingTask(folder);
+            // 2. Por CADA ARCHIVO, lanzar una tarea de procesamiento
+            for (Path file : allFiles) {
+                FileProcessingTask task = new FileProcessingTask(file); // Usamos la nueva Tarea
 
                 task.setOnSucceeded(event -> {
-                    // 3. Actualizar el progreso cuando una tarea termina
-                    int done = completedFolders.incrementAndGet();
-                    progressBar.setProgress((double) done / totalFolders);
-                    if (done == totalFolders) {
-                        statusLabel.setText("¡Análisis completado en " + totalFolders + " carpetas!");
+                    int done = completedFiles.incrementAndGet();
+                    progressBar.setProgress((double) done / totalFiles);
+                    if (done == totalFiles) {
+                        statusLabel.setText("¡Análisis completado para " + totalFiles + " archivos!");
                         selectFolderButton.setDisable(false);
                     }
                 });
-                
+
                 task.setOnFailed(event -> {
-                    // Manejo de errores si una tarea específica falla
-                    System.err.println("Falló la tarea para la carpeta: " + folder);
-                    task.getException().printStackTrace();
-                    int done = completedFolders.incrementAndGet(); // Contar también las fallidas para que la barra avance
-                    if (done == totalFolders) {
+                    System.err.println("Falló la tarea para el archivo: " + file);
+                    if (task.getException() != null) {
+                        task.getException().printStackTrace();
+                    }
+                    int done = completedFiles.incrementAndGet();
+                    if (done == totalFiles) {
                         statusLabel.setText("Análisis completado con errores.");
                         selectFolderButton.setDisable(false);
                     }
                 });
 
-                // 4. Enviar la tarea al pool de hilos para su ejecución
+                // 3. Enviar la tarea al pool de hilos
                 executorService.submit(task);
             }
 
         } catch (IOException e) {
-            statusLabel.setText("Error al leer el directorio: " + e.getMessage());
+            statusLabel.setText("Error al escanear el directorio: " + e.getMessage());
             selectFolderButton.setDisable(false);
             e.printStackTrace();
         }
