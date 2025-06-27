@@ -17,7 +17,7 @@ Una aplicación de escritorio construida con JavaFX que utiliza un modelo de con
 * **🧠 Clasificación por Contenido (IA):** Utiliza un modelo de Machine Learning (Naive Bayes con WEKA) para leer el contenido de los archivos de texto y clasificarlos en categorías como `CODE`, `DOCUMENT` o `CONFIG`.
 * **🖼️ Reconocimiento de Imágenes:** Identifica archivos de imagen por su extensión (JPG, PNG, GIF, etc.) y los agrupa en la categoría `IMAGES`.
 * **⚡ Interfaz de Usuario Fluida:** Gracias a un robusto modelo de concurrencia, la interfaz gráfica nunca se congela, incluso al procesar miles de archivos.
-* **🚀 Procesamiento Paralelo:** Asigna un hilo de ejecución a cada subcarpeta, aprovechando al máximo los procesadores multi-núcleo para un análisis ultra rápido.
+* **🚀 Procesamiento Paralelo Masivo:** Lanza una tarea independiente por **cada archivo encontrado**, saturando los núcleos de la CPU para un análisis de máxima velocidad, ideal para carpetas con miles de archivos.
 * **📊 Feedback en Tiempo Real:** Una barra de progreso y mensajes de estado mantienen al usuario informado durante todo el proceso de clasificación.
 
 ---
@@ -39,7 +39,7 @@ Este proyecto sirve como una demostración práctica de varios conceptos avanzad
 ### 1. Programación Concurrente
 La aplicación está diseñada para ser altamente eficiente y responsiva.
 * **Modelo Multi-hilo:** Se utiliza un `ExecutorService` con un `FixedThreadPool` para crear un pool de hilos.
-* **Paralelismo de Tareas:** Se lanza una tarea (`FolderProcessingTask`) independiente por cada subcarpeta encontrada. Esto permite procesar múltiples carpetas en paralelo, reduciendo drásticamente el tiempo total.
+* **Paralelismo de Alta Granularidad:** Se realiza un escaneo recursivo para obtener una lista de **todos los archivos**. Luego, se lanza una tarea (`FileProcessingTask`) independiente por **cada archivo**, permitiendo que el pool de hilos procese cientos o miles de archivos de forma simultánea.
 * **Sincronización Segura:** Se utiliza un `AtomicInteger` para llevar la cuenta del progreso de forma segura a través de múltiples hilos, y `Platform.runLater()` para garantizar que todas las actualizaciones de la UI se realicen en el hilo de la aplicación de JavaFX, evitando condiciones de carrera.
 
 ### 2. Machine Learning (Clasificación Supervisada)
@@ -52,7 +52,7 @@ El corazón "inteligente" del clasificador se basa en un modelo entrenado.
 El proyecto sigue una variación del patrón **MVC (Modelo-Vista-Controlador)** adaptada para JavaFX.
 * **Vista:** Definida de forma declarativa en el archivo FXML (`main_view.fxml`).
 * **Controlador:** La clase `MainController.java` maneja la lógica de la interfaz y los eventos del usuario.
-* **Modelo:** Las clases de lógica de negocio (`ClassifierService`, `FolderProcessingTask`, etc.) encapsulan el funcionamiento interno de la aplicación.
+* **Modelo:** Las clases de lógica de negocio (`ClassifierService`, `FileProcessingTask`, etc.) encapsulan el funcionamiento interno de la aplicación.
 
 ---
 
