@@ -48,11 +48,11 @@ public class FolderProcessingTask extends Task<Void> {
             String predictedCategory;
 
             if (FileContentReader.isImageFile(filePath)) {
-                predictedCategory = "IMAGES (Recomendado)";
+                predictedCategory = "IMAGES";
             } else if (FileContentReader.isTextFile(filePath)) {
                 try {
                     List<String> tokens = FileContentReader.readAndPreprocessFile(filePath);
-                    predictedCategory = MainApp.classifierService.classify(tokens) + " (Recomendado)";
+                    predictedCategory = MainApp.classifierService.classify(tokens);
                 } catch (Exception e) {
                     predictedCategory = "Error al Clasificar";
                     System.err.println("Error clasificando " + fileName + ": " + e.getMessage());
