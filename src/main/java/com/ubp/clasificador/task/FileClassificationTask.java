@@ -1,4 +1,4 @@
-package com.ubp.clasificador.task;
+/*package com.ubp.clasificador.task;
 
 import com.ubp.clasificador.MainApp;
 import com.ubp.clasificador.ui.ResultTableEntry;
@@ -97,3 +97,4 @@ public class FileClassificationTask extends Task<Void> {
         return null;
     }
 }
+*/

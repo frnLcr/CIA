@@ -1,21 +1,25 @@
 package com.ubp.clasificador.ui;
 
-import com.ubp.clasificador.MainApp; // Para acceder a la referencia estática del controlador
-import com.ubp.clasificador.task.FileClassificationTask;
+// Imports de JavaFX
+import com.ubp.clasificador.task.FolderProcessingTask;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.DirectoryChooser;
+
+// Imports de Java Standard
 import java.io.File;
+import java.io.IOException; // <--- ASEGÚRATE DE TENER ESTE
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
 
 public class MainController {
 
@@ -42,9 +46,10 @@ public class MainController {
         fileExtensionColumn.setCellValueFactory(new PropertyValueFactory<>("fileExtension"));
         predictedCategoryColumn.setCellValueFactory(new PropertyValueFactory<>("predictedCategory"));
 
-        // Inicializa el ExecutorService (un pool de un solo hilo para esta tarea)
-        // Usamos un solo hilo para que las tareas se ejecuten secuencialmente y no saturen.
-        executorService = Executors.newSingleThreadExecutor();
+        // Usar un pool de hilos para procesar carpetas en paralelo.
+        // El tamaño puede ser el número de núcleos de la CPU para un rendimiento óptimo.
+        int coreCount = Runtime.getRuntime().availableProcessors();
+        executorService = Executors.newFixedThreadPool(coreCount);
 
         // Estado inicial de la barra de progreso
         progressBar.setProgress(0);
@@ -56,63 +61,74 @@ public class MainController {
         return fileResults;
     }
 
-    // Método llamado cuando el botón "Seleccionar Carpeta" es presionado
     @FXML
-    private void handleSelectFolder() {
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Seleccionar Carpeta para Clasificar");
-        File selectedDirectory = directoryChooser.showDialog(selectFolderButton.getScene().getWindow());
+private void handleSelectFolder() {
+    DirectoryChooser directoryChooser = new DirectoryChooser();
+    directoryChooser.setTitle("Seleccionar Carpeta Raíz");
+    File selectedDirectory = directoryChooser.showDialog(selectFolderButton.getScene().getWindow());
 
-        if (selectedDirectory != null) {
-            Path folderPath = selectedDirectory.toPath();
-            folderPathLabel.setText("Ruta de la Carpeta: " + folderPath.toString());
+    if (selectedDirectory != null) {
+        Path rootFolderPath = selectedDirectory.toPath();
+        folderPathLabel.setText("Ruta Raíz: " + rootFolderPath.toString());
+        fileResults.clear();
+        progressBar.setProgress(0);
+        selectFolderButton.setDisable(true);
+        statusLabel.setText("Buscando subcarpetas...");
 
-            // Limpiar resultados anteriores
-            fileResults.clear();
-            progressBar.setProgress(0); // Resetear progreso al iniciar nuevo escaneo
+        // Usamos un try-catch porque Files.list() puede lanzar IOException
+        try {
+            // 1. Obtener la lista de todas las subcarpetas
+            List<Path> subfolders;
+            try (java.util.stream.Stream<Path> paths = Files.list(rootFolderPath)) {
+                subfolders = paths.filter(Files::isDirectory).collect(Collectors.toList());
+            }
 
-            // Crear y ejecutar la tarea de clasificación
-            FileClassificationTask task = new FileClassificationTask(folderPath);
+            if (subfolders.isEmpty()) {
+                statusLabel.setText("No se encontraron subcarpetas. Analizando carpeta raíz...");
+                // Si no hay subcarpetas, al menos analiza la carpeta raíz
+                subfolders.add(rootFolderPath);
+            }
 
-            // Enlazar propiedades de la tarea a los elementos de la UI
-            progressBar.progressProperty().bind(task.progressProperty());
-            statusLabel.textProperty().bind(task.messageProperty());
+            final int totalFolders = subfolders.size();
+            final AtomicInteger completedFolders = new AtomicInteger(0); // Contador atómico para progreso thread-safe
+            statusLabel.setText("Encontradas " + totalFolders + " carpetas. Lanzando hilos de análisis...");
 
-            // Deshabilitar botón mientras la tarea está en curso
-            selectFolderButton.setDisable(true);
+            // 2. Por cada subcarpeta, lanzar una tarea de procesamiento
+            for (Path folder : subfolders) {
+                FolderProcessingTask task = new FolderProcessingTask(folder);
 
-            // Manejar el final de la tarea (éxito o fallo)
-            task.setOnSucceeded(event -> {
-                statusLabel.textProperty().unbind();
-                statusLabel.setText("Escaneo completado.");
-                progressBar.progressProperty().unbind();
-                progressBar.setProgress(1.0); // Asegurar que la barra muestre 100% al finalizar
-                selectFolderButton.setDisable(false); // Habilitar botón
-            });
+                task.setOnSucceeded(event -> {
+                    // 3. Actualizar el progreso cuando una tarea termina
+                    int done = completedFolders.incrementAndGet();
+                    progressBar.setProgress((double) done / totalFolders);
+                    if (done == totalFolders) {
+                        statusLabel.setText("¡Análisis completado en " + totalFolders + " carpetas!");
+                        selectFolderButton.setDisable(false);
+                    }
+                });
+                
+                task.setOnFailed(event -> {
+                    // Manejo de errores si una tarea específica falla
+                    System.err.println("Falló la tarea para la carpeta: " + folder);
+                    task.getException().printStackTrace();
+                    int done = completedFolders.incrementAndGet(); // Contar también las fallidas para que la barra avance
+                    if (done == totalFolders) {
+                        statusLabel.setText("Análisis completado con errores.");
+                        selectFolderButton.setDisable(false);
+                    }
+                });
 
-            task.setOnFailed(event -> {
-                statusLabel.textProperty().unbind();
-                statusLabel.setText("Error durante el escaneo: " + task.getException().getMessage());
-                task.getException().printStackTrace(); // Imprimir stack trace para depuración
-                progressBar.progressProperty().unbind();
-                progressBar.setProgress(0);
-                selectFolderButton.setDisable(false); // Habilitar botón
-            });
+                // 4. Enviar la tarea al pool de hilos para su ejecución
+                executorService.submit(task);
+            }
 
-            task.setOnCancelled(event -> {
-                statusLabel.textProperty().unbind();
-                statusLabel.setText("Escaneo cancelado.");
-                progressBar.progressProperty().unbind();
-                progressBar.setProgress(0);
-                selectFolderButton.setDisable(false); // Habilitar botón
-            });
-
-            // Iniciar la tarea en un hilo del ExecutorService
-            executorService.submit(task);
-        } else {
-            statusLabel.setText("Selección de carpeta cancelada.");
+        } catch (IOException e) {
+            statusLabel.setText("Error al leer el directorio: " + e.getMessage());
+            selectFolderButton.setDisable(false);
+            e.printStackTrace();
         }
     }
+}
 
     // Método para detener el ExecutorService cuando la aplicación se cierra (IMPORTANTE)
     public void shutdownExecutor() {
