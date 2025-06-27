@@ -24,7 +24,7 @@ Una aplicación de escritorio construida con JavaFX que utiliza un modelo de con
 
 ## 🛠️ Tecnologías Utilizadas
 
-* **Lenguaje:** Java 17+
+* **Lenguaje:** Java 22+
 * **Framework UI:** JavaFX
 * **Gestor de Proyecto y Dependencias:** Apache Maven
 * **Machine Learning:** Librería [Weka](https://www.cs.waikato.ac.nz/ml/weka/) (Clasificador Naive Bayes).
