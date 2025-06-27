@@ -1,8 +1,9 @@
 # Clasificador Inteligente de Archivos 📂🤖
 
-![Java](https://img.shields.io/badge/Java-17%2B-blue?logo=java&logoColor=white)
+![Java](https://img.shields.io/badge/Java-22-blue?logo=java&logoColor=white)
 ![Maven](https://img.shields.io/badge/Maven-4.0.0-red?logo=apachemaven&logoColor=white)
-![JavaFX](https://img.shields.io/badge/JavaFX-21-orange?logo=openjfx&logoColor=white)
+![JavaFX](https://img.shields.io/badge/JavaFX-22-orange?logo=openjfx&logoColor=white)
+![Weka](https://img.shields.io/badge/Weka-3.8.6-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 Una aplicación de escritorio construida con JavaFX que utiliza un modelo de concurrencia avanzado y Machine Learning para analizar, clasificar y organizar archivos de forma inteligente.
